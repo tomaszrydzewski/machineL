@@ -1,0 +1,87 @@
+---
+title: "Submission"
+output: html_document
+---
+
+
+Load the libraries
+```{r}
+library(caret)
+library(randomForest)
+```
+
+
+Read the data and remove all the columns we are not interested in
+```{r}
+train_set <- read.csv("C:/Users/Tommy/Documents/pml-training.csv", na.strings=c("NA","#DIV/0!", ""), row.names = 1)
+test_set <- read.csv("C:/Users/Tommy/Documents/pml-testing.csv", na.strings=c("NA","#DIV/0!", ""), row.names = 1)
+train_set   <-train_set[,-c(1:7)]
+test_set <-test_set[,-c(1:7)]
+train_set<-train_set[,colSums(is.na(train_set)) == 0]
+test_set <-test_set[,colSums(is.na(test_set)) == 0]
+```
+
+First look at the data
+```{r}
+dim(train_set)
+table(train_set$classe)
+```
+
+
+Split the data into the training set and teh validation set
+```{r}
+set.seed(123456)
+train_partition <- createDataPartition(train_set$classe, p = 0.8, list = FALSE)
+Training_set <- train_set[train_partition, ]
+Validation_set <- train_set[-train_partition, ]
+```
+
+Fit the model, I'm going to use a ramdom forest algorithm. 
+```{r}
+model <- randomForest(classe ~ ., data = Training_set, importance = TRUE, ntrees = 10)
+```
+
+
+Predict on the trainign set
+```{r}
+prediction_training <- predict(model, Training_set)
+print(confusionMatrix(prediction_training, Training_set$classe))
+```
+As wecan see the prediction is 100% accurate - there is a risk of overfitting here. 
+
+
+
+Predict on the validation set
+```{r}
+prediction_validation <- predict(model, Validation_set)
+print(confusionMatrix(prediction_validation, Validation_set$classe))
+```
+Not as good on the validation set but still pretty good as we're getting about 99% accuracy here.
+
+
+Finally the test set
+```{r}
+test_set_prediction <- predict(model, test_set)
+test_set_prediction
+answers <- as.vector(test_set_prediction)
+```
+
+
+```{r}
+pml_write_files = function(x) {
+  n = length(x)
+  for (i in 1:n) {
+    filename = paste0("problem_id_", i, ".txt")
+    write.table(x[i], file = filename, quote = FALSE, row.names = FALSE, 
+                col.names = FALSE)
+  }
+}
+pml_write_files(answers)
+```
+
+
+
+
+
+
+
